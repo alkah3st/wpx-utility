@@ -1,13 +1,12 @@
 <?php
 /*
  * Plugin Name: WP Extend Utilities
- * Plugin URI: http://www.dquinn.net/wp-extend/
+ * Plugin URI: https://github.com/alkah3st/wpx-utility
  * Description: Utility functions for the WPX Theme.
  * Version: 0.0.1
  * Author: Daniel Quinn
  * Author URI: http://www.dquinn.net
  * License: GPL2
- * GitHub Plugin URI: https://github.com/alkah3st/wpx-utility/
  * @package wpx-utility
  * @author Daniel Quinn <daniel@dquinn.net>
  * @license http://www.gnu.org/licenses/gpl-2.0.html GNU Public License GPL-2.0+
@@ -44,31 +43,6 @@ register_activation_hook(__FILE__, '\WPX\Utility\activate');
 register_deactivation_hook(__FILE__, '\WPX\Utility\deactivate');
 
 /**
- * Activation
- *
- * @todo Make this work for Multisite.
- * @since 1.0
-*/
-function activate() {}
-
-/**
- * Deactivation
- * 
- * @todo Make this work for Multisite.
- * @since 1.0
-*/
-function deactivate() {}
-
-/**
- * Helper Functions
- *
- * @package WordPress
- * @subpackage WPX_Theme
- * @since WPX Theme 0.1.0
- */
-namespace WPX\Utility;
-
-/**
  * Partition Array
  * @param Array $list
  * @param int $p
@@ -82,8 +56,8 @@ function partition($array, $segmentCount) {
 	$outputArray = array();
 
 	while($dataCount > $segmentLimit) {
-	    $outputArray[] = array_splice($array,0,$segmentLimit);
-	    $dataCount = count($array);
+		$outputArray[] = array_splice($array,0,$segmentLimit);
+		$dataCount = count($array);
 	}
 	if($dataCount > 0) $outputArray[] = $array;
 
@@ -91,17 +65,15 @@ function partition($array, $segmentCount) {
 }
 
 /**
-* Crossload Image
-*
-* Given an image URL, uploads the image to the Media Library 
-* and then returns the uploaded file's attachment ID.
-* 
-*/
+ * Sideload Image
+ * 
+ * Given an image URL, uploads the image to the Media Library 
+ * and then returns the uploaded file's attachment ID.
+ * 
+ * @param  [string] $image_url URL path to the image.
+ * @return [int]            Uploaded file's attachment ID.
+ */
 function sideload_image($image_url) {
-
-	require_once(ABSPATH . 'wp-admin/includes/media.php');
-	require_once(ABSPATH . 'wp-admin/includes/file.php');
-	require_once(ABSPATH . 'wp-admin/includes/image.php');
 
 	$tmp = download_url( $image_url );
 
@@ -129,10 +101,13 @@ function sideload_image($image_url) {
 
 /**
  * Modest Video
- * @param  [type] $oembed ACF oEmbed.
  *
- * Outputs YouTube or Vimeo videos with minimal branding
- * and makes JS APIs active.
+ * Removes YouTube or Vimeo branding and controls from
+ * an oEmbed when used in conjunction with ACF. Also
+ * enables JS api for both types.
+ * 
+ * @param  [string] $oembed Output from ACF oEmbed.
+ * @return [string] oEmbed output.
  */
 function modest_video($oembed) {
 
@@ -182,8 +157,8 @@ function modest_video($oembed) {
 
 /**
  * Get Attachment
- *
- * Gets an attachment by ID.
+ * @param  [int] $attachment_id ID of attachment.
+ * @return [obj]               Attachment object.
  */
 function wp_get_attachment( $attachment_id ) {
 
@@ -199,10 +174,9 @@ function wp_get_attachment( $attachment_id ) {
 }
 
 /**
- * Get Post By Slug
- *
- * Gets a post object by its slug.
- * 
+ * Get Post by Slug
+ * @param  [string] $post_name Post name of post.
+ * @return [obj]            The post.
  */
 function get_post_by_slug($post_name) {
 	global $wpdb;
@@ -212,9 +186,12 @@ function get_post_by_slug($post_name) {
 
 /**
  * Friendly Datetime
- *
- * (From the original WP source)
  * 
+ * Ported from early WP theme.
+ * 
+ * @param  [string]  $older_date Expects date() format.
+ * @param  [boolean or string] $newer_date Expects date() format.
+ * @return [string]              Friendly date text.
  */
 function get_time_since($older_date, $newer_date = false) {
 	// array of time period chunks
@@ -229,7 +206,7 @@ function get_time_since($older_date, $newer_date = false) {
 	
 	// $newer_date will equal false if we want to know the time elapsed between a date and the current time
 	// $newer_date will have a value if we want to work out time elapsed between two known dates
-	$newer_date = ($newer_date == false) ? (time()+(60*60*get_option("gmt_offset"))) : $newer_date;
+	$newer_date = ($newer_date == false) ? (time()+(60*60*get_settings("gmt_offset"))) : $newer_date;
 	
 	// difference in seconds
 	$since = $newer_date - $older_date;
@@ -272,11 +249,14 @@ function get_time_since($older_date, $newer_date = false) {
 }
 
 /**
-* Get First Term
-*
-* Gets the primary term from a given taxonomy on a post.
-* 
-*/
+ * Get First Term
+ *
+ * Gets the first term attached to a post.
+ * 
+ * @param  [string]  $taxonomy The taxonomy desired.
+ * @param  [boolen or object] $post     The post involved.
+ * @return [object]            The term itself.
+ */
 function get_single_term($taxonomy, $post=false) {
 	if (!$post) {
 		global $post;
@@ -300,12 +280,15 @@ function get_single_term($taxonomy, $post=false) {
 }
 
 /**
-* Get Image
-*
-* Takes an attachment ID and returns an HTTP path to the image
-* after cropping it to the specified crop size.
-*
-*/
+ * Get Image
+ * 
+ * Takes an attachment ID and returns an HTTP path to the image
+ * after cropping it to the specified crop size.
+ * 
+ * @param  [int] $image_id  The attachment ID.
+ * @param  [string|boolean] $crop_size The crop size as set in theme.
+ * @return [string]             HTTP path to the cropped image.
+ */
 function get_image($image_id=false, $crop_size=false) {
 	$image = false;
 	if ($image_id) $image = \WPX\Utility\resize($image_id, $crop_size);
@@ -316,6 +299,10 @@ function get_image($image_id=false, $crop_size=false) {
  * Resize
  *
  * Returns the resized URL of a given attachment ID
+ * 
+ * @param  [int] $attachment_id Attachment ID
+ * @param  string $crop_size     The crop size as defined in the theme.
+ * @return [string]                URL path to the image.
  */
 function resize($attachment_id, $crop_size="full") {
 	$image_object = wp_get_attachment_image_src( $attachment_id, $crop_size );
@@ -325,7 +312,10 @@ function resize($attachment_id, $crop_size="full") {
 /**
  * Get Menu by Location
  *
- * Retrieves menu object by location.
+ * Gets the menu object assigned to a specific menu location.
+ * 
+ * @param  [string] $location The desired menu location.
+ * @return [obj]           The menu object assigned to that location.
  */
 function get_menu_by_location( $location ) {
 	if( empty($location) ) return false;
@@ -380,7 +370,7 @@ function truncate($text, $limit, $break) {
 * @param int $length
 *
 */
-function get_excerpt_by_id($object, $length = 55) {
+function get_excerpt_by_id($object, $length = 55, $excerpt = '...') {
 	if ($object->post_excerpt) {
 		return $object->post_excerpt;
 	} else {
@@ -395,16 +385,18 @@ function get_excerpt_by_id($object, $length = 55) {
 			array_push($words, '');
 			$output = implode(' ', $words);
 		}
-		return $output.'...';
+		return $output.$excerpt;
 	}
 }
 
 /**
-* Get Page by Template
-*
-* Returns an object of the first page with the given
-* template.
-*/
+ * Get Page by Template
+ *
+ * Retrieves the most recent page with the specified template.
+ * 
+ * @param  [string] $template Path to template (relative to theme).
+ * @return [obj]    The (most recent) page bearing the template.
+ */
 function get_page_by_template($template) {
 	$pages = get_posts(array(
 		"post_type" => "page",
@@ -448,7 +440,7 @@ function get_ancestor_id($object = null) {
 /**
  * Extend Custom Walker
  *
- * Adds the slug to each menu item.
+ * Adds the slug of the menu item to each menu list item.
  * Needs to be called via new \WPX\Utility\custom_nav_walker().
  * 
  */
@@ -500,26 +492,31 @@ class custom_nav_walker extends \Walker_Nav_Menu {
  * Exclude Trackbacks
  *
  * Does not count trackbacks toward comment totals. 
- * (This needs to be called as an action from the theme.)
  * 
  */
-function exclude_trackbacks( $count ) {
+function hide_trackbacks_pingbacks( $count ) {
 	global $id;
-	$comments = get_approved_comments($id);
 	$comment_count = 0;
-	foreach($comments as $comment){
-		if($comment->comment_type == ""){
+	$comments = get_approved_comments( $id );
+	foreach ( $comments as $comment ) {
+		if ( $comment->comment_type === '' ) {
 			$comment_count++;
 		}
 	}
 	return $comment_count;
 }
 
+add_filter( 'get_comments_number', '\WPX\Utility\hide_trackbacks_pingbacks', 0 );
+
 /**
- * Filter Video Shortcode
+ * Make oEmbeds Responsive
  *
- * Wraps oEmbeds in FitVids container.
+ * Wraps oEmbed output in flex-video tag.
  * 
+ * @param  [string] $html oEmbed output.
+ * @param  [string] $url  Path to oEmbed media.
+ * @param  [type] $attr Attributes.
+ * @return [type]       Output wrapped in flex-video.
  */
 function responsive_videos($html, $url, $attr) {
 	
@@ -538,45 +535,84 @@ add_filter('embed_oembed_html', '\WPX\Utility\responsive_videos', 10, 3);
 /**
  * WP List Pages Walker
  *
- * Adds slug to list pages function.
+ * Adds slug of menu item to menu list items.
  * Needs to be called via new \WPX\Utility\list_pages_walker().
  * 
  */
-class list_pages_walker extends \Walker_page {
+class list_pages_walker extends \Walker_Page {
 
-	function start_el(&$output, $page, $depth = 0, $args = array(), $current_page = 0) {
+	function start_el( &$output, $page, $depth = 0, $args = array(), $current_page = 0 ) {
 		if ( $depth ) {
-			$indent = str_repeat("\t", $depth);
+			$indent = str_repeat( "\t", $depth );
 		} else {
-		$indent = '';
-	}
+			$indent = '';
+		}
 
-	extract($args, EXTR_SKIP);
-	$css_class = array('page_item', 'page-item-'.$page->ID);
-	if ( !empty($current_page) ) {
-		$_current_page = get_page( $current_page );
-		get_post_ancestors($_current_page);
-		if ( isset($_current_page->ancestors) && in_array($page->ID, (array) $_current_page->ancestors) )
-			$css_class[] = 'current_page_ancestor';
-		if ( $page->ID == $current_page )
-			$css_class[] = 'current_page_item';
-		elseif ( $_current_page && $page->ID == $_current_page->post_parent )
-			$css_class[] = 'current_page_parent';
+		$css_class = array( 'page_item', 'page-item-' . $page->ID );
+
+		$css_class[] = 'depth-'.$depth;
+
+		if ( isset( $args['pages_with_children'][ $page->ID ] ) ) {
+			$css_class[] = 'page_item_has_children';
+		}
+
+		if ( ! empty( $current_page ) ) {
+			$_current_page = get_post( $current_page );
+			if ( $_current_page && in_array( $page->ID, $_current_page->ancestors ) ) {
+				$css_class[] = 'current_page_ancestor';
+			}
+			if ( $page->ID == $current_page ) {
+				$css_class[] = 'current_page_item';
+			} elseif ( $_current_page && $page->ID == $_current_page->post_parent ) {
+				$css_class[] = 'current_page_parent';
+			}
 		} elseif ( $page->ID == get_option('page_for_posts') ) {
-		$css_class[] = 'current_page_parent';
-	}
+			$css_class[] = 'current_page_parent';
+		}
 
-	$css_class = implode( ' ', apply_filters( 'page_css_class', $css_class, $page, $depth, $args, $current_page ) );
+		/**
+		 * Filters the list of CSS classes to include with each page item in the list.
+		 *
+		 * @since 2.8.0
+		 *
+		 * @see wp_list_pages()
+		 *
+		 * @param array   $css_class    An array of CSS classes to be applied
+		 *                              to each list item.
+		 * @param WP_Post $page         Page data object.
+		 * @param int     $depth        Depth of page, used for padding.
+		 * @param array   $args         An array of arguments.
+		 * @param int     $current_page ID of the current page.
+		 */
+		$css_classes = implode( ' ', apply_filters( 'page_css_class', $css_class, $page, $depth, $args, $current_page ) );
 
-	$output .= $indent . '<li class="' . $css_class . ' '.$page->post_name.'"><a href="' . get_permalink($page->ID) . '">' . $link_before . apply_filters( 'the_title', $page->post_title ) . $link_after .'</a>';
+		if ( '' === $page->post_title ) {
+			/* translators: %d: ID of a post */
+			$page->post_title = sprintf( __( '#%d (no title)' ), $page->ID );
+		}
 
-	if ( !empty($show_date) ) {
-		if ( 'modified' == $show_date )
-			$time = $page->post_modified;
-		else
-			$time = $page->post_date;
+		$args['link_before'] = empty( $args['link_before'] ) ? '' : $args['link_before'];
+		$args['link_after'] = empty( $args['link_after'] ) ? '' : $args['link_after'];
 
-		$output .= " " . mysql2date($date_format, $time);
+		$output .= $indent . sprintf(
+			'<li class="%s"><a href="%s">%s%s%s</a>',
+			$css_classes,
+			get_permalink( $page->ID ),
+			$args['link_before'],
+			/** This filter is documented in wp-includes/post-template.php */
+			apply_filters( 'the_title', $page->post_title, $page->ID ),
+			$args['link_after']
+		);
+
+		if ( ! empty( $args['show_date'] ) ) {
+			if ( 'modified' == $args['show_date'] ) {
+				$time = $page->post_modified;
+			} else {
+				$time = $page->post_date;
+			}
+
+			$date_format = empty( $args['date_format'] ) ? '' : $args['date_format'];
+			$output .= " " . mysql2date( $date_format, $time );
 		}
 	}
 }
@@ -618,7 +654,6 @@ function template_lookup($template) {
 		return $template;
 
 	}
-
 
 }
 add_action( 'template_include', '\WPX\Utility\template_lookup', 99);
