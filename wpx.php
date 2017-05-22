@@ -127,27 +127,37 @@ function sideload_image($image_url) {
 	return $id;
 }
 
-/*
-Modest Video Parameters
-*/
+/**
+ * Modest Video
+ * @param  [type] $oembed ACF oEmbed.
+ *
+ * Outputs YouTube or Vimeo videos with minimal branding
+ * and makes JS APIs active.
+ */
 function modest_video($oembed) {
 
 	preg_match('/youtube.com/', $oembed, $is_youtube);
 	preg_match('/vimeo.com/', $oembed, $is_vimeo);
+
+	$player_id = 'video_'.rand(5, 1500);
 
 	if ($is_vimeo) {
 		$params = array(
 			'portrait'    => 0,
 			'title'        => 0,
 			'byline'    => 0,
-			'badge' => 0
+			'badge' => 0,
+			'api'=>1,
+			'player_id'=>$player_id
 		);
 	} elseif ($is_youtube) {
 		$params = array(
 			'modestbranding'    => 1,
 			'rel'        => 0,
 			'showinfo'    => 0,
-			'wmode'=>'transparent'
+			'wmode'=>'transparent',
+			'html5'=>1,
+			'enablejsapi'=>1
 		);
 	}
 
@@ -157,15 +167,23 @@ function modest_video($oembed) {
 		$new_src = add_query_arg($params, $src);
 		$oembed = str_replace($src, $new_src, $oembed);
 		$attributes = 'frameborder="0"';
-		$oembed = str_replace('></iframe>', ' ' . $attributes . '></iframe>', $oembed);
+
+		if ($is_vimeo) {
+			$oembed = str_replace('></iframe>', ' ' . $attributes . ' width="1600" height="700" class="is-vimeo" id="'.$player_id.'"></iframe>', $oembed);
+		} else {
+			$oembed = str_replace('></iframe>', ' ' . $attributes . ' width="1600" height="700" class="is-youtube"></iframe>', $oembed);
+		}
+		
 		return $oembed;
 	} else {
 		return $oembed;
 	}
 }
 
-/*
-* Get Attachment
+/**
+ * Get Attachment
+ *
+ * Gets an attachment by ID.
  */
 function wp_get_attachment( $attachment_id ) {
 
@@ -180,9 +198,12 @@ function wp_get_attachment( $attachment_id ) {
 	);
 }
 
-/*
-* Get a Post by Slug
-*/
+/**
+ * Get Post By Slug
+ *
+ * Gets a post object by its slug.
+ * 
+ */
 function get_post_by_slug($post_name) {
 	global $wpdb;
 	$post = $wpdb->get_var($wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_name = %s", $post_name));
@@ -191,6 +212,9 @@ function get_post_by_slug($post_name) {
 
 /**
  * Friendly Datetime
+ *
+ * (From the original WP source)
+ * 
  */
 function get_time_since($older_date, $newer_date = false) {
 	// array of time period chunks
@@ -249,6 +273,9 @@ function get_time_since($older_date, $newer_date = false) {
 
 /**
 * Get First Term
+*
+* Gets the primary term from a given taxonomy on a post.
+* 
 */
 function get_single_term($taxonomy, $post=false) {
 	if (!$post) {
@@ -297,6 +324,8 @@ function resize($attachment_id, $crop_size="full") {
 
 /**
  * Get Menu by Location
+ *
+ * Retrieves menu object by location.
  */
 function get_menu_by_location( $location ) {
 	if( empty($location) ) return false;
@@ -665,4 +694,109 @@ function get_subsite_path() {
 
 	return $subsite_path;
 
+}
+
+/**
+ * Get Mixed Terms
+ *
+ * Returns an array of terms from multiple taxonomies when given a post ID.
+ * 
+ */
+function get_mixed_terms($id, $taxonomies) {
+
+	$term_set = array();
+
+	foreach($taxonomies as $taxonomy) {
+		$terms = get_the_terms( $id, $taxonomy );
+		if ($terms) {
+			$term_set = array_merge($terms, $term_set);
+		}
+	}
+
+	if ($term_set) :
+
+		usort($term_set, function($a, $b) {
+			return strcmp($a->name, $b->name);
+		});
+
+		return $term_set;
+		
+	else :
+
+		return false;
+
+	endif;
+}
+
+/**
+ * Get Mixed Term List
+ *
+ * Returns links to terms from multiple taxonomies, separated by a comma.
+ * 
+ */
+function get_mixed_term_list($id, $taxonomies) {
+
+	$term_set = \WPX\Utility\get_mixed_terms($id, $taxonomies);
+
+	if ($term_set) :
+
+		$list = '';
+
+		foreach($term_set as $i=>$term) :
+
+			if ($i < count($term_set)-1) :
+
+				$list .= '<a href="'.get_term_link( $term, $term->taxonomy ).'">'.$term->name.'</a>, ';
+
+			else :
+
+				$list .= '<a href="'.get_term_link( $term, $term->taxonomy ).'">'.$term->name.'</a>';
+
+			endif;
+
+		endforeach;
+
+		return $list;
+
+	else :
+
+		return false;
+
+	endif;
+
+}
+
+/**
+ * Zip Merge Array
+ *
+ * Merges two arrays, alternating keys.
+ * 
+ */
+function array_zip_merge() {
+	$output = array();
+	// The loop incrementer takes each array out of the loop as it gets emptied by array_shift().
+	for ($args = func_get_args(); count($args); $args = array_filter($args)) {
+		// &$arg allows array_shift() to change the original.
+		foreach ($args as &$arg) {
+			$output[] = array_shift($arg);
+		}
+	}
+	return $output;
+}
+
+/**
+* Expiration Check
+*
+* Determines whether a date is expired or not.
+*
+*/
+function is_expired($expiration_utc) {
+	$now = new \DateTime('now');
+	$now = $now->format('U');
+	$expiration = $expiration_utc;
+	if ($now > $expiration) {
+		return true;
+	} else { 
+		return false;
+	}
 }
