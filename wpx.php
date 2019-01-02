@@ -296,6 +296,36 @@ function get_image($image_id=false, $crop_size=false) {
 }
 
 /**
+ * Get Responsive Image
+ *
+ * Takes an attachment ID and returns src, srcset, and sizes attributes.
+ * (We use the sizes attribute to limit the maximum size the browser may select from all
+ * available sizes. Recommended that you define both a 1x and 2x crop size and set the max_width
+ * parameter to the 2x max. So if your crop size is 500x500, then your 2x max_with would be '1000px'
+ * and you would define a crop size for both 500x500 and 1000x1000.
+ * 
+ */
+function get_image_responsive($image_id, $image_size, $max_width) {
+
+	// check the image ID is not blank
+	if($image_id != '') {
+
+		// set the default src image size
+		$image_src = wp_get_attachment_image_url( $image_id, $image_size );
+
+		// set the srcset with various image sizes
+		$image_srcset = wp_get_attachment_image_srcset( $image_id, $image_size );
+
+		// get the alt tag
+		$image_alt = get_post_meta( $image_id, '_wp_attachment_image_alt', true);
+
+		// generate the markup for the responsive image
+		return 'src="'.$image_src.'" alt="'.$image_alt.'" srcset="'.$image_srcset.'" sizes="(max-width: '.$max_width.') 100vw, '.$max_width.'"';
+
+	}
+}
+
+/**
  * Resize
  *
  * Returns the resized URL of a given attachment ID
