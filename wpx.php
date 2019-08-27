@@ -296,6 +296,36 @@ function get_image($image_id=false, $crop_size=false) {
 }
 
 /**
+ * Get Responsive Image
+ *
+ * Takes an attachment ID and returns src, srcset, and sizes attributes.
+ * (We use the sizes attribute to limit the maximum size the browser may select from all
+ * available sizes. Recommended that you define both a 1x and 2x crop size and set the max_width
+ * parameter to the 2x max. So if your crop size is 500x500, then your 2x max_with would be '1000px'
+ * and you would define a crop size for both 500x500 and 1000x1000.
+ * 
+ */
+function get_image_responsive($image_id, $image_size, $max_width) {
+
+	// check the image ID is not blank
+	if($image_id != '') {
+
+		// set the default src image size
+		$image_src = wp_get_attachment_image_url( $image_id, $image_size );
+
+		// set the srcset with various image sizes
+		$image_srcset = wp_get_attachment_image_srcset( $image_id, $image_size );
+
+		// get the alt tag
+		$image_alt = get_post_meta( $image_id, '_wp_attachment_image_alt', true);
+
+		// generate the markup for the responsive image
+		return 'src="'.$image_src.'" alt="'.$image_alt.'" srcset="'.$image_srcset.'" sizes="(max-width: '.$max_width.') 100vw, '.$max_width.'"';
+
+	}
+}
+
+/**
  * Resize
  *
  * Returns the resized URL of a given attachment ID
@@ -799,6 +829,115 @@ function get_mixed_term_list($id, $taxonomies) {
 
 	endif;
 
+}
+
+/**
+ * This class outputs custom comment walker for HTML5 friendly WordPress comment and threaded replies.
+ *
+ * @since 1.0.0
+ */
+class HTML5_Walker_Comment extends \Walker_Comment {
+
+	/**
+	 * Outputs a comment in the HTML5 format.
+	 *
+	 * @see wp_list_comments()
+	 *
+	 * @param WP_Comment $comment Comment to display.
+	 * @param int        $depth   Depth of the current comment.
+	 * @param array      $args    An array of arguments.
+	 */
+	protected function html5_comment( $comment, $depth, $args ) {
+
+		$tag = ( 'div' === $args['style'] ) ? 'div' : 'li';
+
+		?>
+		<<?php echo $tag; ?> id="comment-<?php comment_ID(); ?>" <?php comment_class( $this->has_children ? 'parent' : '', $comment ); ?>>
+			<article id="div-comment-<?php comment_ID(); ?>" class="comment-body">
+				<footer class="comment-meta">
+					<div class="comment-author vcard">
+						<?php
+						$comment_author_link = get_comment_author_link( $comment );
+						$comment_author_url  = get_comment_author_url( $comment );
+						$comment_author      = get_comment_author( $comment );
+						$avatar              = get_avatar( $comment, $args['avatar_size'] );
+						if ( 0 != $args['avatar_size'] ) {
+							if ( empty( $comment_author_url ) ) {
+								echo $avatar;
+							} else {
+								printf( '<a href="%s" rel="external nofollow" class="url">', $comment_author_url );
+								echo $avatar;
+							}
+						}
+						/*
+						 * Using the `check` icon instead of `check_circle`, since we can't add a
+						 * fill color to the inner check shape when in circle form.
+						 */
+						if ( is_comment_by_post_author( $comment ) ) {
+							printf( '<span class="post-author-badge" aria-hidden="true">%s</span>', 'Admin' );
+						}
+
+						printf(
+							/* translators: %s: comment author link */
+							wp_kses(
+								__( '%s <span class="screen-reader-text says">says:</span>', 'wpx' ),
+								array(
+									'span' => array(
+										'class' => array(),
+									),
+								)
+							),
+							'<b class="fn">' . get_comment_author_link( $comment ) . '</b>'
+						);
+
+						if ( ! empty( $comment_author_url ) ) {
+							echo '</a>';
+						}
+						?>
+					</div><!-- .comment-author -->
+
+					<div class="comment-metadata">
+						<a href="<?php echo esc_url( get_comment_link( $comment, $args ) ); ?>">
+							<?php
+								/* translators: 1: comment date, 2: comment time */
+								$comment_timestamp = sprintf( __( '%1$s at %2$s', 'wpx' ), get_comment_date( '', $comment ), get_comment_time() );
+							?>
+							<time datetime="<?php comment_time( 'c' ); ?>" title="<?php echo $comment_timestamp; ?>">
+								<?php echo $comment_timestamp; ?>
+							</time>
+						</a>
+						<?php
+							edit_comment_link( __( 'Edit', 'wpx' ), '<span class="edit-link-sep">&mdash;</span>' );
+						?>
+					</div><!-- .comment-metadata -->
+
+					<?php if ( '0' == $comment->comment_approved ) : ?>
+					<p class="comment-awaiting-moderation"><?php _e( 'Your comment is awaiting moderation.', 'wpx' ); ?></p>
+					<?php endif; ?>
+				</footer><!-- .comment-meta -->
+
+				<div class="comment-content">
+					<?php comment_text(); ?>
+				</div><!-- .comment-content -->
+
+			</article><!-- .comment-body -->
+
+			<?php
+			comment_reply_link(
+				array_merge(
+					$args,
+					array(
+						'add_below' => 'div-comment',
+						'depth'     => $depth,
+						'max_depth' => $args['max_depth'],
+						'before'    => '<div class="comment-reply">',
+						'after'     => '</div>',
+					)
+				)
+			);
+			?>
+		<?php
+	}
 }
 
 /**
