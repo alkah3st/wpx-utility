@@ -262,17 +262,46 @@ function get_single_term($taxonomy, $post=false) {
 		global $post;
 	}
 	if ($taxonomy) {
-		$terms = get_the_terms( $post->ID, $taxonomy );
-		if ($terms) {
-			$reset_terms = array_values($terms);
-			if ($reset_terms) {
-				$single_term = array_shift($reset_terms);
-				return $single_term;
+		if ( class_exists('WPSEO_Primary_Term') ) {
+
+			$wpseo_primary_term = new \WPSEO_Primary_Term( $taxonomy, $post );
+			$wpseo_primary_term = $wpseo_primary_term->get_primary_term();
+			$term = get_term( $wpseo_primary_term );
+
+			if ( is_wp_error( $term ) ) {
+
+				$terms = get_the_terms( $post->ID, $taxonomy );
+				if ($terms) {
+					$reset_terms = array_values($terms);
+					if ($reset_terms) {
+						$single_term = array_shift($reset_terms);
+						return $single_term;
+					} else {
+						return false;
+					}
+				} else {
+					return false;
+				}
+
+			} else {
+
+				return $term;
+
+			}
+
+		} else {
+			$terms = get_the_terms( $post->ID, $taxonomy );
+			if ($terms) {
+				$reset_terms = array_values($terms);
+				if ($reset_terms) {
+					$single_term = array_shift($reset_terms);
+					return $single_term;
+				} else {
+					return false;
+				}
 			} else {
 				return false;
 			}
-		} else {
-			return false;
 		}
 	} else {
 		return false;
@@ -400,22 +429,34 @@ function truncate($text, $limit, $break) {
 * @param int $length
 *
 */
-function get_excerpt_by_id($object, $length = 55, $excerpt = '...') {
+function get_excerpt_by_id($object, $length = 55, $excerpt = '...', $maxed=false) {
+	// if an excerpt is explicitly declared
 	if ($object->post_excerpt) {
-		return $object->post_excerpt;
+		if ($maxed) {
+			$output = $object->post_excerpt;
+			$output = strip_tags($output, '<p>');
+			$words = explode(' ', $output, $length + 1);
+			if (count($words) > $length) {
+				array_pop($words);
+				array_push($words, '');
+				$output = implode(' ', $words);
+				$output = $output.$excerpt;
+			}
+		} else {
+			$output = $object->post_excerpt;
+		}
+		return $output;
 	} else {
 		$output = $object->post_content;
-		$output = apply_filters('the_content', $output);
-		$output = str_replace('\]\]\>', ']]&gt;', $output);
 		$output = strip_tags($output);
-		$excerpt_length = 55;
 		$words = explode(' ', $output, $length + 1);
-		if (count($words)> $length) {
+		if (count($words) > $length) {
 			array_pop($words);
 			array_push($words, '');
 			$output = implode(' ', $words);
+			$output = $output.$excerpt;
 		}
-		return $output.$excerpt;
+		return $output;
 	}
 }
 
