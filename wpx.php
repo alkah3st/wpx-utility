@@ -38,10 +38,6 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-// installation, deactivation, uninstallation hooks
-register_activation_hook(__FILE__, '\WPX\Utility\activate');
-register_deactivation_hook(__FILE__, '\WPX\Utility\deactivate');
-
 /**
  * Partition Array
  * @param Array $list
